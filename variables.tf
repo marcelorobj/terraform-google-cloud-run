@@ -78,6 +78,38 @@ variable "template_labels" {
   default     = {}
 }
 
+variable "ingress" {
+  type        = string
+  description = "Restricts network access to your Cloud Run service"
+  default     = "INGRESS_TRAFFIC_ALL"
+
+  validation {
+    condition     = contains(["INGRESS_TRAFFIC_ALL", "INGRESS_TRAFFIC_INTERNAL_ONLY", "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"], var.ingress)
+    error_message = "Allowed values for ingress are \"INGRESS_TRAFFIC_ALL\", \"INGRESS_TRAFFIC_INTERNAL_ONLY\", or \"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER\"."
+  }
+}
+
+variable "vpc_connector" {
+  type        = string
+  description = "The full resource name of the VPC Access connector to use. Leave null to use Direct VPC Egress."
+  default     = null
+}
+
+variable "vpc_egress" {
+  type        = string
+  description = "The outbound traffic setting for VPC. Use 'PRIVATE_RANGES_ONLY' with a connector. Use 'ALL_TRAFFIC' for Direct VPC Egress. Set to null to disable all VPC egress."
+  default     = "ALL_TRAFFIC"
+
+  validation {
+    condition     = var.vpc_connector == null || (var.vpc_connector != null && var.vpc_egress == "PRIVATE_RANGES_ONLY")
+    error_message = "If a 'vpc_connector' is specified, 'vpc_egress' MUST be set to 'PRIVATE_RANGES_ONLY'."
+  }
+  validation {
+    condition     = var.vpc_egress == null || can(regex("^(PRIVATE_RANGES_ONLY|ALL_TRAFFIC)$", var.vpc_egress))
+    error_message = "The 'vpc_egress' value must be one of 'PRIVATE_RANGES_ONLY', 'ALL_TRAFFIC', or null."
+  }
+}
+
 variable "template_annotations" {
   type        = map(string)
   description = "Annotations to the container metadata including VPC Connector and SQL. See [more details](https://cloud.google.com/run/docs/reference/rpc/google.cloud.run.v1#revisiontemplate)"
