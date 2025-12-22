@@ -20,6 +20,14 @@ variable "project_id" {
   type        = string
 }
 
+variable "multi_region_settings" {
+  description = "Settings for creating a Multi-Region Service. "
+  type = object({
+    regions = list(string)
+  })
+  default = null
+}
+
 variable "location" {
   description = "Cloud Run service deployment location"
   type        = string

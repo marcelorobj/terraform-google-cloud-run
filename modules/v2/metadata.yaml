@@ -48,6 +48,8 @@ spec:
         location: examples/simple_job_exec
       - name: v2
         location: examples/v2
+      - name: v2_multi_regions
+        location: examples/v2_multi_regions
       - name: v2_with_gmp
         location: examples/v2_with_gmp
       - name: v2_with_gpu
@@ -565,13 +567,13 @@ spec:
     roles:
       - level: Project
         roles:
+          - roles/resourcemanager.projectIamAdmin
+          - roles/compute.viewer
+          - roles/iap.admin
           - roles/run.admin
           - roles/iam.serviceAccountAdmin
           - roles/iam.serviceAccountUser
           - roles/serviceusage.serviceUsageViewer
-          - roles/resourcemanager.projectIamAdmin
-          - roles/compute.viewer
-          - roles/iap.admin
     services:
       - cloudresourcemanager.googleapis.com
       - compute.googleapis.com
@@ -583,6 +585,6 @@ spec:
       - storage-api.googleapis.com
     providerVersions:
       - source: hashicorp/google
-        version: ">= 6, < 7"
+        version: ">= 6, < 8"
       - source: hashicorp/google-beta
-        version: ">= 6, < 7"
+        version: ">= 6, < 8"

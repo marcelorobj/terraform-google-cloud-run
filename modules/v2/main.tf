@@ -104,6 +104,13 @@ resource "google_cloud_run_v2_service" "main" {
   iap_enabled         = length(var.iap_members) > 0
   deletion_protection = var.cloud_run_deletion_protection
 
+  dynamic "multi_region_settings" {
+    for_each = var.multi_region_settings == null ? [] : [var.multi_region_settings]
+    content {
+      regions = multi_region_settings.value.regions
+    }
+  }
+
   template {
     revision        = var.revision
     labels          = var.template_labels

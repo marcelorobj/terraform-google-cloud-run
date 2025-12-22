@@ -21,8 +21,18 @@ variable "project_id" {
 
 variable "regions" {
   type        = list(string)
-  description = "Regions where serverless vpc access connectors will be created."
+  description = "Regions where serverless VPC Access connectors will be created."
   default     = ["us-west1", "europe-west1"]
+}
+
+variable "service_name" {
+  type    = string
+  default = "cloudrun-multiregion"
+}
+
+variable "image" {
+  type    = string
+  default = "us-docker.pkg.dev/cloudrun/container/hello:latest"
 }
 
 variable "cloud_run_deletion_protection" {
@@ -33,17 +43,20 @@ variable "cloud_run_deletion_protection" {
 
 variable "vpc_mode" {
   type        = string
-  description = "VPC Mode: direct-vpc-egress (default) or vpc-access-connector."
-  default     = "direct-vpc-egress"
+  description = "VPC Mode: default, direct-vpc-egress or vpc-access-connector."
+  default     = "default"
 
   validation {
-    condition     = contains(["direct-vpc-egress", "vpc-access-connector"], var.vpc_mode)
-    error_message = "vpc_mode must be 'direct-vpc-egress' or 'vpc-access-connector'."
+    condition = contains(
+      ["default", "direct-vpc-egress", "vpc-access-connector"],
+      var.vpc_mode
+    )
+    error_message = "vpc_mode must be 'default', 'direct-vpc-egress' or 'vpc-access-connector'."
   }
 }
 
 variable "vpc_connectors" {
-  description = "Configuration for Serverless VPC Access connectors by regions."
+  description = "Configuration for Serverless VPC Access connectors by region."
   type = map(object({
     name        = string
     region      = string
@@ -65,10 +78,28 @@ variable "vpc_subnets" {
 }
 
 variable "vpc_egress" {
-  type        = string
-  default     = "PRIVATE_RANGES_ONLY"
+  type    = string
+  default = "private-ranges-only"
   validation {
-    condition     = var.vpc_egress == null || can(regex("^(PRIVATE_RANGES_ONLY|ALL_TRAFFIC)$", var.vpc_egress))
-    error_message = "vpc_egress must be PRIVATE_RANGES_ONLY, ALL_TRAFFIC or null."
+    condition     = var.vpc_egress == null || can(regex("^(private-ranges-only|all-traffic)$", var.vpc_egress))
+    error_message = "vpc_egress must be private-ranges-only, all-traffic or null."
   }
+}
+
+variable "primary_region" {
+  type        = string
+  description = "Primary region for reference."
+  default     = "us-west1"
+}
+
+variable "lb_ip_address" {
+  type        = string
+  description = "Optional: Use an existing Global IP for Load Balancer. Leave empty to create a new one."
+  default     = null
+}
+
+variable "lb_domain" {
+  type        = string
+  description = "Optional: Use an existing domain. Leave empty to use <IP>.sslip.io."
+  default     = null
 }

@@ -14,23 +14,33 @@
  * limitations under the License.
  */
 
-locals {
-  vpc_connectors_ids = {
-    for region, conn in google_vpc_access_connector.vpc_connectors :
-    region => conn.id
-  }
+# ##############################################################################
+# LOCALS
+# ##############################################################################
 
-  vpc_config_valid = (
-    (var.vpc_mode == "vpc-access-connector" && length(var.vpc_connectors) > 0) ||
-    (var.vpc_mode == "direct-vpc-egress" && var.vpc_network != null && length(var.vpc_subnets) > 0)
+locals {
+  vpc_flags = (
+    var.vpc_mode == "vpc-access-connector" ?
+    "--vpc-connector=${var.vpc_connectors[var.primary_region].name} --vpc-egress=${var.vpc_egress}" :
+    var.vpc_mode == "direct-vpc-egress" ?
+    "--network=${var.vpc_network} --subnet=${var.vpc_subnets[var.primary_region]} --vpc-egress=${var.vpc_egress}" :
+    ""
   )
 }
+
+###############################################################################
+# SERVICE ACCOUNT
+###############################################################################
 
 resource "google_service_account" "sa" {
   project      = var.project_id
   account_id   = "ci-cloud-run-v2-sa"
-  display_name = "Service account for ci-cloud-run-v2-sa"
+  display_name = "Service account for Cloud Run multi-region"
 }
+
+###############################################################################
+# SERVERLESS VPC ACCESS CONNECTORS (opcional)
+###############################################################################
 
 resource "google_vpc_access_connector" "vpc_connectors" {
   for_each = var.vpc_mode == "vpc-access-connector" ? var.vpc_connectors : {}
@@ -47,51 +57,86 @@ resource "google_vpc_access_connector" "vpc_connectors" {
   max_instances = 4
 }
 
-resource "null_resource" "validate_vpc" {
-  count = local.vpc_config_valid ? 0 : 1
+###############################################################################
+# VALIDATION
+###############################################################################
+
+resource "null_resource" "validate_primary_region" {
+  count = contains(var.regions, var.primary_region) ? 0 : 1
 
   provisioner "local-exec" {
-    command = "echo 'ERROR: VPC configuration invalid. Check your vpc_mode, vpc_connectors, vpc_network and vpc_subnets'' && exit 1"
+    command = "echo \"ERROR: primary_region (${var.primary_region}) must be one of: ${join(", ", var.regions)}\" && exit 1"
   }
 }
+
+resource "null_resource" "validate_vpc" {
+  count = (
+    var.vpc_mode != "default" && (
+      (var.vpc_mode == "vpc-access-connector" && length(var.vpc_connectors) == 0) ||
+      (var.vpc_mode == "direct-vpc-egress" &&
+        (var.vpc_network == null || length(var.vpc_subnets) == 0)
+      )
+    )
+  ) ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "echo 'ERROR: Invalid VPC configuration for selected vpc_mode' && exit 1"
+  }
+}
+
+###############################################################################
+# CLOUD RUN MULTI-REGION DEPLOY
+###############################################################################
 
 module "cloud_run_v2_multiregion" {
   source = "../../modules/v2"
 
-  for_each = toset(var.regions)
-
-  service_name = "cloudrun-multiregion-${each.key}"
-  project_id   = var.project_id
-  location     = each.key
-
+  service_name = "cloudrun-service"
+  location = "global"
+  project_id = var.project_id
   create_service_account = false
   service_account        = google_service_account.sa.email
-
   cloud_run_deletion_protection = var.cloud_run_deletion_protection
 
-  vpc_access = (
-    var.vpc_mode == "vpc-access-connector"
-    ?
-    {
-      connector          = local.vpc_connectors_ids[each.key]
-      egress             = "PRIVATE_RANGES_ONLY"
-      network_interfaces = null
-    }
-    :
-    {
-      connector = null
-      egress    = var.vpc_egress
-      network_interfaces = {
-        network    = var.vpc_network
-        subnetwork = var.vpc_subnets[each.key]
-      }
-    }
-  )
+  multi_region_settings = {
+    regions = [
+      "us-west1",
+      "europe-west1"
+    ]
+  }
 
-  containers = [
+    containers = [
     {
       container_image = "us-docker.pkg.dev/cloudrun/container/hello"
       container_name  = "hello-world"
+
+      # Check if app startd. If it fails,cloud run restart the container
+
+      startup_probe = {
+        initial_delay_seconds = 5   # wait 5 seconds before start test
+        timeout_seconds       = 3   # request has 3s to reply
+        period_seconds        = 10  # Test each 10s
+        failure_threshold     = 3   # fails after 3 wrong attempts (ex: 500, 502, timeout)
+
+        http_get = {
+          path = "/"
+          port = 8080
+        }
+      }
+
+      # Liveness Probe: check if app remains running health
+      # If start get 5xx the container is restarted
+      liveness_probe = {
+        initial_delay_seconds = 5
+        timeout_seconds       = 3
+        period_seconds        = 15
+        failure_threshold     = 3
+
+        http_get = {
+          path = "/"
+          port = 8080
+        }
+      }
     }
   ]
 }
