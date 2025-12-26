@@ -62,6 +62,12 @@ spec:
         description: The project ID to deploy to
         varType: string
         required: true
+      - name: multi_region_settings
+        description: "Settings for creating a Multi-Region Service. "
+        varType: |-
+          object({
+              regions = list(string)
+            })
       - name: location
         description: Cloud Run service deployment location
         varType: string
@@ -567,13 +573,13 @@ spec:
     roles:
       - level: Project
         roles:
-          - roles/resourcemanager.projectIamAdmin
-          - roles/compute.viewer
-          - roles/iap.admin
           - roles/run.admin
           - roles/iam.serviceAccountAdmin
           - roles/iam.serviceAccountUser
           - roles/serviceusage.serviceUsageViewer
+          - roles/resourcemanager.projectIamAdmin
+          - roles/compute.viewer
+          - roles/iap.admin
     services:
       - cloudresourcemanager.googleapis.com
       - compute.googleapis.com

@@ -25,14 +25,21 @@ variable "regions" {
   default     = ["us-west1", "europe-west1"]
 }
 
+variable "location" {
+  type        = string
+  description = " Settings for creating a Multi-Region Service. Make sure to use region = 'global' if deploying a multi-region cloud run."
+  default     = "global"
+}
+
 variable "service_name" {
-  type    = string
-  default = "cloudrun-multiregion"
+  type        = string
+  description = "Cloud Run service name."
 }
 
 variable "image" {
-  type    = string
-  default = "us-docker.pkg.dev/cloudrun/container/hello:latest"
+  type        = string
+  description = "Name of the image used by cloud run."
+  default     = "us-docker.pkg.dev/cloudrun/container/hello:latest"
 }
 
 variable "cloud_run_deletion_protection" {
@@ -41,28 +48,28 @@ variable "cloud_run_deletion_protection" {
   default     = true
 }
 
-variable "vpc_mode" {
+variable "cloud_run_vpc_egress_mode" {
   type        = string
-  description = "VPC Mode: default, direct-vpc-egress or vpc-access-connector."
+  description = "Defines how Cloud Run connects to the VPC for outbound traffic. Modes can be default, direct-vpc-egress or vpc-access-connector."
   default     = "default"
 
   validation {
     condition = contains(
       ["default", "direct-vpc-egress", "vpc-access-connector"],
-      var.vpc_mode
+      var.cloud_run_vpc_egress_mode
     )
-    error_message = "vpc_mode must be 'default', 'direct-vpc-egress' or 'vpc-access-connector'."
+    error_message = "cloud_run_vpc_egress_mode must be 'default', 'direct-vpc-egress' or 'vpc-access-connector'."
   }
 }
 
 variable "vpc_connectors" {
-  description = "Configuration for Serverless VPC Access connectors by region."
   type = map(object({
     name        = string
     region      = string
     subnet_name = string
   }))
-  default = {}
+  description = "Configuration for Serverless VPC Access connectors by region."
+  default     = {}
 }
 
 variable "vpc_network" {
@@ -77,12 +84,13 @@ variable "vpc_subnets" {
   default     = {}
 }
 
-variable "vpc_egress" {
-  type    = string
-  default = "private-ranges-only"
+variable "vpc_egress_traffic" {
+  type        = string
+  description = "Defines which outbound traffic from Cloud Run is routed through the VPC (private IP ranges only or all traffic) when VPC egress is enabled."
+  default     = "private-ranges-only"
   validation {
-    condition     = var.vpc_egress == null || can(regex("^(private-ranges-only|all-traffic)$", var.vpc_egress))
-    error_message = "vpc_egress must be private-ranges-only, all-traffic or null."
+    condition     = var.vpc_egress_traffic == null || can(regex("^(private-ranges-only|all-traffic)$", var.vpc_egress_traffic))
+    error_message = "vpc_egress_traffic must be private-ranges-only, all-traffic or null."
   }
 }
 

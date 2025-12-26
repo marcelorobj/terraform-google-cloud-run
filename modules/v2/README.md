@@ -67,6 +67,7 @@ Functional examples are included in the
 | location | Cloud Run service deployment location | `string` | n/a | yes |
 | max\_instance\_request\_concurrency | Sets the maximum number of requests that each serving instance can receive. This is optional. | `string` | `null` | no |
 | members | Users/SAs to be given invoker access to the service. Grant invoker access by specifying the users or service accounts (SAs). Use allUsers for public access, allAuthenticatedUsers for access by logged-in Google users, or provide a list of specific users/SAs. [See the complete list of available options here](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service_iam#member/members-1) | `list(string)` | `[]` | no |
+| multi\_region\_settings | Settings for creating a Multi-Region Service. | <pre>object({<br>    regions = list(string)<br>  })</pre> | `null` | no |
 | node\_selector | Node Selector describes the hardware requirements of the GPU resource. [More info](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service#nested_template_node_selector). | <pre>object({<br>    accelerator = string<br>  })</pre> | `null` | no |
 | project\_id | The project ID to deploy to | `string` | n/a | yes |
 | revision | The unique name for the revision. If this field is omitted, it will be automatically generated based on the Service name | `string` | `null` | no |

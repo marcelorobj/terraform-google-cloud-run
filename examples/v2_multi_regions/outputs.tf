@@ -14,43 +14,57 @@
  * limitations under the License.
  */
 
-###############################################################################
-# CLOUD RUN
-###############################################################################
-
 output "cloud_run_service_account" {
   description = "Service account used by Cloud Run instances."
   value       = google_service_account.sa.email
 }
 
-# output "service_name" {
-#   description = "Cloud Run service name (multi-region)."
-#   value       = module.cloud_run_v2_multiregion.service_name
-# }
+output "cloud_run_service_id" {
+  description = "Cloud Run service ID."
+  value       = module.cloud_run_v2_multiregion.service_id
+}
 
-# output "service_uri" {
-#   description = "Cloud Run service URI (multi-region)."
-#   value       = module.cloud_run_v2_multiregion.service_uri
-# }
+output "global_forwarding_rule_id" {
+  description = "ID of the global HTTPS forwarding rule."
+  value       = google_compute_global_forwarding_rule.cloudrun_https_rule.id
+}
 
-# output "service_id" {
-#   description = "Cloud Run service ID (multi-region)."
-#   value       = module.cloud_run_v2_multiregion.service_id
-# }
+output "https_proxy_id" {
+  description = "ID of the HTTPS target proxy."
+  value       = google_compute_target_https_proxy.cloudrun_https_proxy.id
+}
+
+output "url_map_id" {
+  description = "ID of the URL map."
+  value       = google_compute_url_map.cloudrun_urlmap.id
+}
+
+output "serverless_neg_self_links" {
+  description = "Serverless NEG self links by region."
+  value = {
+    for region, neg in google_compute_region_network_endpoint_group.cloudrun_neg :
+    region => neg.self_link
+  }
+}
+
+output "ssl_certificate_domains" {
+  description = "Domains covered by the managed SSL certificate."
+  value       = google_compute_managed_ssl_certificate.cloudrun_cert.managed[0].domains
+}
+
+output "cloud_run_vpc_egress_mode" {
+  description = "Cloud Run VPC egress mode in use."
+  value       = var.cloud_run_vpc_egress_mode
+}
+
+output "cloud_run_vpc_egress_setting" {
+  description = "Cloud Run VPC egress setting."
+  value       = var.vpc_egress_traffic
+}
 
 output "cloud_run_regions" {
   description = "Regions where the Cloud Run service is deployed."
   value       = var.regions
-}
-
-output "cloud_run_service_name" {
-  description = "Cloud Run service name."
-  value       = var.service_name
-}
-
-output "backend_service_name" {
-  description = "Global backend service name."
-  value       = google_compute_backend_service.cloudrun_backend_global.name
 }
 
 output "serverless_negs" {
@@ -60,26 +74,6 @@ output "serverless_negs" {
     region => neg.name
   }
 }
-
-output "url_map_name" {
-  description = "URL map name."
-  value       = google_compute_url_map.cloudrun_urlmap.name
-}
-
-output "https_proxy_name" {
-  description = "HTTPS proxy name."
-  value       = google_compute_target_https_proxy.cloudrun_https_proxy.name
-}
-
-output "https_forwarding_rule_name" {
-  description = "HTTPS forwarding rule name."
-  value       = google_compute_global_forwarding_rule.cloudrun_https_rule.name
-}
-
-
-###############################################################################
-# VPC ACCESS CONNECTORS
-###############################################################################
 
 output "vpc_connectors_ids" {
   description = "VPC Access Connectors IDs by region."
@@ -96,15 +90,6 @@ output "vpc_connectors_names" {
     region => connector.name
   }
 }
-
-###############################################################################
-# LOAD BALANCER / NETWORKING
-###############################################################################
-
-# output "serverless_neg_id" {
-#   description = "Serverless Network Endpoint Group ID used by the global load balancer."
-#   value       = google_compute_region_network_endpoint_group.cloudrun_neg.id
-# }
 
 output "backend_service_global" {
   description = "Global backend service backing the Cloud Run multi-region service."
@@ -135,4 +120,3 @@ output "global_entrypoint" {
   description = "Global HTTPS entrypoint for the Cloud Run multi-region service."
   value       = "https://${local.lb_domain}"
 }
-

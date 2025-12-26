@@ -59,8 +59,8 @@ resource "google_compute_backend_service" "cloudrun_backend_global" {
   enable_cdn            = false
 
   outlier_detection {
-    consecutive_errors = 5
-    consecutive_gateway_failure = 3
+    consecutive_errors                    = 3
+    consecutive_gateway_failure           = 5
     enforcing_consecutive_errors          = 100
     enforcing_consecutive_gateway_failure = 100
 
@@ -112,9 +112,8 @@ resource "google_compute_url_map" "cloudrun_urlmap" {
             "gateway-error",
             "connect-failure",
             "retriable-4xx",
-            "gateway-timeout",
+            "unavailable",
             "dead-deadline-exceeded",
-            "503"
           ]
         }
       }
