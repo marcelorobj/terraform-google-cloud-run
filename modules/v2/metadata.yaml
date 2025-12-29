@@ -63,7 +63,7 @@ spec:
         varType: string
         required: true
       - name: multi_region_settings
-        description: "Settings for creating a Multi-Region Service. "
+        description: " Settings for creating a Multi-Region Service."
         varType: |-
           object({
               regions = list(string)
@@ -509,6 +509,25 @@ spec:
         description: The sandbox environment to host this Revision.
         varType: string
         defaultValue: EXECUTION_ENVIRONMENT_GEN2
+      - name: load_balancer_config
+        description: Configuration for the Load Balancer. If null, no LB resources are created.
+        varType: |-
+          object({
+              regions           = list(string)
+              global_ip_address = optional(string, null)
+              domain            = optional(string, null)
+              name_prefix       = optional(string, "cloudrun")
+            })
+      - name: enable_load_balancer
+        description: If true, creates the Global Load Balancer resources. Defaults to false.
+        varType: bool
+        defaultValue: false
+      - name: lb_ip_address
+        description: "Optional: Use an existing Global IP for Load Balancer. Leave empty to create a new one. (Only used if enable_load_balancer is true)"
+        varType: string
+      - name: lb_domain
+        description: "Optional: Use an existing domain. Leave empty to use <IP>.sslip.io. (Only used if enable_load_balancer is true)"
+        varType: string
     outputs:
       - name: apphub_service_uri
         description: Service URI in CAIS style to be used by Apphub.
@@ -517,6 +536,7 @@ spec:
           - location: string
             service_id: string
             service_uri: string
+      - name: backend_service_global_id
       - name: creator
         description: Email address of the authenticated creator.
         type: string
@@ -525,6 +545,8 @@ spec:
         type:
           - map
           - string
+      - name: global_forwarding_rule_id
+      - name: https_proxy_id
       - name: last_modifier
         description: Email address of the last authenticated modifier.
         type: string
@@ -534,6 +556,9 @@ spec:
       - name: latest_ready_revision
         description: Name of the latest revision that is serving traffic. See comments in reconciling for additional information on reconciliation process in Cloud Run.
         type: string
+      - name: lb_domain
+      - name: lb_https_url
+      - name: lb_ip
       - name: location
         description: Location in which the Cloud Run service was created
         type: string
@@ -543,6 +568,7 @@ spec:
       - name: project_id
         description: Google Cloud project in which the service was created
         type: string
+      - name: serverless_negs
       - name: service_account_id
         description: Service account id and email
         type:
@@ -559,6 +585,8 @@ spec:
       - name: service_uri
         description: The main URI in which this Service is serving traffic.
         type: string
+      - name: ssl_certificate_domains
+      - name: ssl_certificate_id
       - name: traffic_statuses
         description: Detailed status information for corresponding traffic targets.
         type:
@@ -569,17 +597,18 @@ spec:
               tag: string
               type: string
               uri: string
+      - name: url_map_id
   requirements:
     roles:
       - level: Project
         roles:
-          - roles/run.admin
-          - roles/iam.serviceAccountAdmin
           - roles/iam.serviceAccountUser
           - roles/serviceusage.serviceUsageViewer
           - roles/resourcemanager.projectIamAdmin
           - roles/compute.viewer
           - roles/iap.admin
+          - roles/run.admin
+          - roles/iam.serviceAccountAdmin
     services:
       - cloudresourcemanager.googleapis.com
       - compute.googleapis.com

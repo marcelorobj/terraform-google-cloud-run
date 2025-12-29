@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-# ##############################################################################
-# LOCALS
-# ##############################################################################
-
 locals {
   vpc_flags = (
     var.cloud_run_vpc_egress_mode == "vpc-access-connector" ?
@@ -28,19 +24,11 @@ locals {
   )
 }
 
-###############################################################################
-# SERVICE ACCOUNT
-###############################################################################
-
 resource "google_service_account" "sa" {
   project      = var.project_id
   account_id   = "ci-cloud-run-v2-sa"
   display_name = "Service account for Cloud Run multi-region"
 }
-
-###############################################################################
-# SERVERLESS VPC ACCESS CONNECTORS (opcional)
-###############################################################################
 
 resource "google_vpc_access_connector" "vpc_connectors" {
   for_each = var.cloud_run_vpc_egress_mode == "vpc-access-connector" ? var.vpc_connectors : {}
@@ -56,10 +44,6 @@ resource "google_vpc_access_connector" "vpc_connectors" {
   min_instances = 2
   max_instances = 4
 }
-
-###############################################################################
-# VALIDATION
-###############################################################################
 
 resource "null_resource" "validate_primary_region" {
   count = contains(var.regions, var.primary_region) ? 0 : 1
@@ -84,12 +68,8 @@ resource "null_resource" "validate_vpc" {
   }
 }
 
-###############################################################################
-# CLOUD RUN MULTI-REGION DEPLOY
-###############################################################################
-
 module "cloud_run_v2_multiregion" {
-  source = "marcelorobj/cloud-run/google//modules/v2"
+  source = "../../modules/v2"
 
   service_name                  = var.service_name
   location                      = var.location
@@ -99,24 +79,26 @@ module "cloud_run_v2_multiregion" {
   cloud_run_deletion_protection = var.cloud_run_deletion_protection
 
   multi_region_settings = {
-    regions = [
-      "us-west1",
-      "europe-west1"
-    ]
+    regions = var.regions
   }
+
+  load_balancer_config = var.enable_load_balancer ? {
+    regions           = var.regions
+    global_ip_address = var.lb_ip_address
+    domain            = var.lb_domain
+    name_prefix       = var.service_name
+  } : null
 
   containers = [
     {
       container_image = var.image
       container_name  = "hello-world"
 
-      # Check if app startd. If it fails,cloud run restart the container
-
       startup_probe = {
-        initial_delay_seconds = 10 # wait 10 seconds before start test
-        timeout_seconds       = 3  # request has 3s to reply
-        period_seconds        = 3  # Test each 3s
-        failure_threshold     = 5  # fails after 5 wrong attempts (ex: 500, 502, timeout)
+        initial_delay_seconds = 10
+        timeout_seconds       = 3
+        period_seconds        = 3
+        failure_threshold     = 5
 
         http_get = {
           path = "/"
@@ -124,8 +106,6 @@ module "cloud_run_v2_multiregion" {
         }
       }
 
-      # Liveness Probe: check if app remains running health
-      # If start get 5xx the container is restarted
       liveness_probe = {
         initial_delay_seconds = 10
         timeout_seconds       = 3

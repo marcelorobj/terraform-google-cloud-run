@@ -76,6 +76,146 @@ locals {
     startup_probe  = []
     liveness_probe = []
   }]
+
+  create_lb = var.load_balancer_config != null
+
+  lb_prefix = try(var.load_balancer_config.name_prefix, "cloudrun")
+
+  create_ip = local.create_lb && try(var.load_balancer_config.global_ip_address, null) == null
+  lb_ip_address = local.create_lb ? (
+    local.create_ip ? google_compute_global_address.lb_ip[0].address : var.load_balancer_config.global_ip_address
+  ) : null
+
+  lb_domain = local.create_lb ? (
+    try(var.load_balancer_config.domain, null) != null
+    ? var.load_balancer_config.domain
+    : "${local.lb_ip_address}.sslip.io"
+  ) : null
+
+  neg_regions = local.create_lb ? toset(var.load_balancer_config.regions) : toset([])
+}
+
+resource "google_compute_global_address" "lb_ip" {
+  count   = local.create_ip ? 1 : 0
+  name    = "${local.lb_prefix}-global-ip"
+  project = var.project_id
+}
+
+resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
+  for_each = local.neg_regions
+
+  project               = var.project_id
+  region                = each.key
+  name                  = "${local.lb_prefix}-neg-${each.key}"
+  network_endpoint_type = "SERVERLESS"
+
+  cloud_run {
+    service = google_cloud_run_v2_service.main.name
+  }
+}
+
+resource "google_compute_backend_service" "cloudrun_backend_global" {
+  count   = local.create_lb ? 1 : 0
+  project = var.project_id
+  name    = "${local.lb_prefix}-backend-global"
+
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  enable_cdn            = false
+
+  outlier_detection {
+    consecutive_errors                    = 3
+    consecutive_gateway_failure           = 5
+    enforcing_consecutive_errors          = 100
+    enforcing_consecutive_gateway_failure = 100
+
+    base_ejection_time { seconds = 30 }
+    interval { seconds = 10 }
+  }
+
+  dynamic "backend" {
+    for_each = google_compute_region_network_endpoint_group.cloudrun_neg
+    content {
+      group = backend.value.id
+    }
+  }
+}
+
+resource "google_compute_url_map" "cloudrun_urlmap" {
+  count   = local.create_lb ? 1 : 0
+  name    = "${local.lb_prefix}-urlmap"
+  project = var.project_id
+
+  default_service = google_compute_backend_service.cloudrun_backend_global[0].id
+
+  host_rule {
+    hosts        = ["*"]
+    path_matcher = "allpaths"
+  }
+
+  path_matcher {
+    name            = "allpaths"
+    default_service = google_compute_backend_service.cloudrun_backend_global[0].id
+
+    path_rule {
+      paths = ["/*"]
+
+      route_action {
+        weighted_backend_services {
+          backend_service = google_compute_backend_service.cloudrun_backend_global[0].id
+          weight          = 100
+        }
+
+        retry_policy {
+          num_retries = 10
+          per_try_timeout { seconds = 30 }
+          retry_conditions = [
+            "5xx",
+            "gateway-error",
+            "connect-failure",
+            "retriable-4xx",
+            "unavailable",
+            "dead-deadline-exceeded",
+          ]
+        }
+      }
+    }
+  }
+}
+
+resource "google_compute_managed_ssl_certificate" "cloudrun_cert" {
+  count   = local.create_lb ? 1 : 0
+  name    = "${local.lb_prefix}-cert"
+  project = var.project_id
+
+  managed {
+    domains = [local.lb_domain]
+  }
+}
+
+resource "google_compute_target_https_proxy" "cloudrun_https_proxy" {
+  count            = local.create_lb ? 1 : 0
+  name             = "${local.lb_prefix}-https-proxy"
+  project          = var.project_id
+  ssl_certificates = [google_compute_managed_ssl_certificate.cloudrun_cert[0].id]
+  url_map          = google_compute_url_map.cloudrun_urlmap[0].id
+}
+
+resource "google_compute_global_forwarding_rule" "cloudrun_https_rule" {
+  count   = local.create_lb ? 1 : 0
+  name    = "${local.lb_prefix}-https-rule"
+  project = var.project_id
+
+  ip_address            = local.lb_ip_address
+  ip_protocol           = "TCP"
+  port_range            = "443"
+  target                = google_compute_target_https_proxy.cloudrun_https_proxy[0].id
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  depends_on = [
+    google_compute_target_https_proxy.cloudrun_https_proxy,
+    google_compute_managed_ssl_certificate.cloudrun_cert
+  ]
 }
 
 resource "google_service_account" "sa" {

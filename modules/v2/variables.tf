@@ -21,7 +21,7 @@ variable "project_id" {
 }
 
 variable "multi_region_settings" {
-  description = "Settings for creating a Multi-Region Service. "
+  description = " Settings for creating a Multi-Region Service."
   type = object({
     regions = list(string)
   })
@@ -365,3 +365,31 @@ variable "execution_environment" {
   }
 }
 
+variable "load_balancer_config" {
+  description = "Configuration for the Load Balancer. If null, no LB resources are created."
+  type = object({
+    regions           = list(string)
+    global_ip_address = optional(string, null)
+    domain            = optional(string, null)
+    name_prefix       = optional(string, "cloudrun")
+  })
+  default = null
+}
+
+variable "enable_load_balancer" {
+  type        = bool
+  description = "If true, creates the Global Load Balancer resources. Defaults to false."
+  default     = false
+}
+
+variable "lb_ip_address" {
+  type        = string
+  description = "Optional: Use an existing Global IP for Load Balancer. Leave empty to create a new one. (Only used if enable_load_balancer is true)"
+  default     = null
+}
+
+variable "lb_domain" {
+  type        = string
+  description = "Optional: Use an existing domain. Leave empty to use <IP>.sslip.io. (Only used if enable_load_balancer is true)"
+  default     = null
+}

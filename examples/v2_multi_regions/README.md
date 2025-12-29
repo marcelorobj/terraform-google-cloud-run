@@ -1,17 +1,18 @@
 # Cloud Run Service using v2 API and multi-regions Example
 
-This example showcases the basic deployment of containerized applications on Cloud Run and IAM policy for the service in multi-regions, including a Global Load Balancer for traffic distribution and SSL termination.
+This example showcases the basic deployment of containerized applications on Cloud Run and IAM policy for the service in multi-regions. It allows for the optional provisioning of a Global Load Balancer for traffic distribution and SSL termination depending on the configuration.
 
 The resources/services/activations/deletions that this example will create/trigger are:
 
 * Deploys a Cloud Run V2 service across multiple regions.
 * Creates a Service Account to be used by Cloud Run Service.
 * Creates Serverless VPC Access Connectors per region (or configures Direct VPC Egress).
-* Reserves a Global Static IP Address.
-* Creates Serverless Network Endpoint Groups (NEGs) per region to bridge the Load Balancer and Cloud Run.
-* Provisions a Global External Application Load Balancer (HTTP/S) with URL Maps and Backend Services.
-* Sets up Google-managed SSL Certificates for secure HTTPS access.
-* Configures outlier detection to handle failover between regions automatically.
+* **If `enable_load_balancer` is set to `true`:**
+  * Reserves a Global Static IP Address (if not provided).
+  * Creates Serverless Network Endpoint Groups (NEGs) per region to bridge the Load Balancer and Cloud Run.
+  * Provisions a Global External Application Load Balancer (HTTP/S) with URL Maps and Backend Services.
+  * Sets up Google-managed SSL Certificates for secure HTTPS access.
+  * Configures outlier detection to handle failover between regions automatically.
 
 ## Assumptions and Prerequisites
 
@@ -39,16 +40,17 @@ For more information, please visit: [Cloud Run Service Health Documentation](htt
 |------|-------------|------|---------|:--------:|
 | cloud\_run\_deletion\_protection | Prevents Terraform from destroying/recreating Cloud Run jobs/services. | `bool` | `true` | no |
 | cloud\_run\_vpc\_egress\_mode | Defines how Cloud Run connects to the VPC for outbound traffic. Modes can be default, direct-vpc-egress or vpc-access-connector. | `string` | `"default"` | no |
-| image | n/a | `string` | `"us-docker.pkg.dev/cloudrun/container/hello:latest"` | no |
+| enable\_load\_balancer | If true, creates the Global Load Balancer resources. Defaults to false. | `bool` | `false` | no |
+| image | Name of the image used by cloud run. | `string` | `"us-docker.pkg.dev/cloudrun/container/hello:latest"` | no |
 | lb\_domain | Optional: Use an existing domain. Leave empty to use <IP>.sslip.io. | `string` | `null` | no |
 | lb\_ip\_address | Optional: Use an existing Global IP for Load Balancer. Leave empty to create a new one. | `string` | `null` | no |
 | location | Settings for creating a Multi-Region Service. Make sure to use region = 'global' if deploying a multi-region cloud run. | `string` | `"global"` | no |
 | primary\_region | Primary region for reference. | `string` | `"us-west1"` | no |
 | project\_id | Project where the Cloud Run v2 will be deployed. | `string` | n/a | yes |
 | regions | Regions where serverless VPC Access connectors will be created. | `list(string)` | <pre>[<br>  "us-west1",<br>  "europe-west1"<br>]</pre> | no |
-| service\_name | n/a | `string` | `"cloudrun-multiregion"` | no |
+| service\_name | Cloud Run service name. | `string` | n/a | yes |
 | vpc\_connectors | Configuration for Serverless VPC Access connectors by region. | <pre>map(object({<br>    name        = string<br>    region      = string<br>    subnet_name = string<br>  }))</pre> | `{}` | no |
-| vpc\_egress | n/a | `string` | `"private-ranges-only"` | no |
+| vpc\_egress\_traffic | Defines which outbound traffic from Cloud Run is routed through the VPC (private IP ranges only or all traffic) when VPC egress is enabled. | `string` | `"private-ranges-only"` | no |
 | vpc\_network | Configuration of VPC Network by region (only for direct-vpc-egress). | `string` | `null` | no |
 | vpc\_subnets | Configuration of VPC subnets by region (only for direct-vpc-egress). | `map(string)` | `{}` | no |
 
@@ -57,19 +59,22 @@ For more information, please visit: [Cloud Run Service Health Documentation](htt
 | Name | Description |
 |------|-------------|
 | backend\_service\_global | Global backend service backing the Cloud Run multi-region service. |
-| backend\_service\_name | Global backend service name. |
 | cloud\_run\_regions | Regions where the Cloud Run service is deployed. |
 | cloud\_run\_service\_account | Service account used by Cloud Run instances. |
-| cloud\_run\_service\_name | Cloud Run service name. |
+| cloud\_run\_service\_id | Cloud Run service ID. |
+| cloud\_run\_vpc\_egress\_mode | Cloud Run VPC egress mode in use. |
+| cloud\_run\_vpc\_egress\_setting | Cloud Run VPC egress setting. |
 | global\_entrypoint | Global HTTPS entrypoint for the Cloud Run multi-region service. |
-| https\_forwarding\_rule\_name | HTTPS forwarding rule name. |
-| https\_proxy\_name | HTTPS proxy name. |
+| global\_forwarding\_rule\_id | ID of the global HTTPS forwarding rule. |
+| https\_proxy\_id | ID of the HTTPS target proxy. |
 | lb\_domain | Domain for the Load Balancer (IP.sslip.io if no custom domain is provided). |
 | lb\_https\_url | HTTPS URL for the global Load Balancer. |
 | lb\_ip | Global IP address of the Load Balancer. |
+| serverless\_neg\_self\_links | Serverless NEG self links by region. |
 | serverless\_negs | Serverless NEGs by region. |
+| ssl\_certificate\_domains | Domains covered by the managed SSL certificate. |
 | ssl\_certificate\_id | Managed SSL certificate ID. |
-| url\_map\_name | URL map name. |
+| url\_map\_id | ID of the URL map. |
 | vpc\_connectors\_ids | VPC Access Connectors IDs by region. |
 | vpc\_connectors\_names | VPC Access Connectors names by region. |
 
@@ -108,4 +113,3 @@ A project with the following APIs enabled must be used to host the main resource
 * Google Cloud Run: `run.googleapis.com`
 * Google Compute Engine: `compute.googleapis.com`
 * Google Network Services: `networkservices.googleapis.com`
-

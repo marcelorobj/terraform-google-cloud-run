@@ -111,3 +111,9 @@ variable "lb_domain" {
   description = "Optional: Use an existing domain. Leave empty to use <IP>.sslip.io."
   default     = null
 }
+
+variable "enable_load_balancer" {
+  type        = bool
+  description = "If true, creates the Global Load Balancer resources. Defaults to false."
+  default     = false
+}
