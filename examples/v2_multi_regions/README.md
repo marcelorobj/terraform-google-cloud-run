@@ -20,6 +20,42 @@ This example assumes that below mentioned prerequisites are in place before cons
 
 * All required APIs are enabled in the GCP Project
 
+## Usage
+
+- Rename the `tfvars` file by running `mv terraform.tfvars.example terraform.tfvars` and update `terraform.tfvars` with values from your environment.
+
+  ```bash
+  mv terraform.tfvars.example terraform.tfvars
+  ```
+
+- Run `terraform init` to get the plugins.
+
+  ```bash
+  terraform init
+  ```
+
+- Run `terraform plan` and review the plan.
+
+  ```bash
+  terraform plan
+  ```
+
+- Run `terraform apply` to apply the infrastructure build.
+
+  ```bash
+  terraform apply
+  ```
+
+
+### Clean up
+
+- Run `terraform destroy` to clean up your environment.
+The input `delete_contents_on_destroy` must have been set to `true` in the original `apply` for the `terraform destroy` command to work.
+
+  ```bash
+  terraform destroy
+  ```
+
 > **DISCLAIMER**: Please pay attention to the following important details regarding the Cloud Run **Service Health** feature used in this project:
 
 *   **Pre-GA Feature:** This feature is subject to the "Pre-GA Offerings Terms" in the General Service Terms section of the Service Specific Terms. Pre-GA features are available "as is" and might have limited support.

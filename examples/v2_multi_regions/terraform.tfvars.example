@@ -1,0 +1,46 @@
+project_id     = "YOUR-PROJECT-ID"
+regions        = ["us-west1", "europe-west1"]
+primary_region = "us-west1"
+service_name = "cloudrun-multiregion"
+
+# Choose between direct-vpc-egress or vpc-access-connector
+cloud_run_vpc_egress_mode = "direct-vpc-egress"
+vpc_egress_traffic = "all-traffic"
+
+# Only for Direct VPC Egress
+#vpc_network = "projects/YOUR-PROJECT/global/networks/YOUR-VPCE"
+
+# vpc_subnets = {
+#   "us-west1"     = "projects/YOUR-PROJECT/regions/us-west1/subnetworks/sb-restricted-us-west1"
+#   "europe-west1" = "projects/YOUR-PROJECT/regions/europe-west1/subnetworks/sb-restricted-europe-west1"
+# }
+
+# Set to true to create the load balancer infrastructure
+# enable_load_balancer = true
+lb_domain            = null # Opcional - Your LB domain
+lb_ip_address        = null # Opcional - Your LB Global IP
+
+# Un-comment if you want to use the default vpc network
+# cloud_run_vpc_egress_mode  = "default"
+# vpc_egress = null
+# vpc_network   = null
+# vpc_subnets   = {}
+# vpc_connectors = {}
+# lb_ip_address = null
+# lb_domain     = null
+
+# Un-comment if you want to use the vpc-access-connector
+# vpc_connectors = {
+#    "us-west1" = {
+#     name        = "con-cloud-run-us"
+#     region      = "us-west1"
+#     subnet_name = "cloudrun-us-west1"
+#   }
+#   "europe-west1" = {
+#     name        = "con-cloud-run-eu"
+#     region      = "europe-west1"
+#     subnet_name = "cloudrun-europe-west1"
+#   }
+# }
+
+# cloud_run_deletion_protection = false
