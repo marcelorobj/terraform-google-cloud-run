@@ -63,6 +63,7 @@ module "cloud_run" {
 | force\_override | Option to force override existing mapping | `bool` | `false` | no |
 | generate\_revision\_name | Option to enable revision name generation | `bool` | `true` | no |
 | image | GCR hosted image URL to deploy | `string` | n/a | yes |
+| ingress | Restricts network access to your Cloud Run service | `string` | `"INGRESS_TRAFFIC_ALL"` | no |
 | limits | Resource limits to the container | `map(string)` | `null` | no |
 | liveness\_probe | Periodic probe of container liveness. Container will be restarted if the probe fails.<br>More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes | <pre>object({<br>    failure_threshold     = optional(number, null)<br>    initial_delay_seconds = optional(number, null)<br>    timeout_seconds       = optional(number, null)<br>    period_seconds        = optional(number, null)<br>    http_get = optional(object({<br>      path = optional(string)<br>      http_headers = optional(list(object({<br>        name  = string<br>        value = string<br>      })), null)<br>    }), null)<br>    grpc = optional(object({<br>      port    = optional(number)<br>      service = optional(string)<br>    }), null)<br>  })</pre> | `null` | no |
 | location | Cloud Run service deployment location | `string` | n/a | yes |
@@ -82,6 +83,8 @@ module "cloud_run" {
 | verified\_domain\_name | List of Custom Domain Name | `list(string)` | `[]` | no |
 | volume\_mounts | [Beta] Volume Mounts to be attached to the container (when using secret) | <pre>list(object({<br>    mount_path = string<br>    name       = string<br>  }))</pre> | `[]` | no |
 | volumes | [Beta] Volumes needed for environment variables (when using secret) | <pre>list(object({<br>    name = string<br>    secret = set(object({<br>      secret_name = string<br>      items       = map(string)<br>    }))<br>  }))</pre> | `[]` | no |
+| vpc\_connector | The full resource name of the VPC Access connector to use. Leave null to use Direct VPC Egress. | `string` | `null` | no |
+| vpc\_egress | The outbound traffic setting for VPC. Use 'PRIVATE\_RANGES\_ONLY' with a connector. Use 'ALL\_TRAFFIC' for Direct VPC Egress. Set to null to disable all VPC egress. | `string` | `"ALL_TRAFFIC"` | no |
 
 ## Outputs
 

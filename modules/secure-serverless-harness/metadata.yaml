@@ -48,6 +48,8 @@ spec:
         location: examples/simple_job_exec
       - name: v2
         location: examples/v2
+      - name: v2_multi_regions
+        location: examples/v2_multi_regions
       - name: v2_with_gmp
         location: examples/v2_with_gmp
       - name: v2_with_gpu

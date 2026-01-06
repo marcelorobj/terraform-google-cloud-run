@@ -21,8 +21,25 @@ variable "project_id" {
 
 variable "regions" {
   type        = list(string)
-  description = "Regions where serverless vpc access connectors will be created."
+  description = "Regions where serverless VPC Access connectors will be created."
   default     = ["us-west1", "europe-west1"]
+}
+
+variable "location" {
+  type        = string
+  description = " Settings for creating a Multi-Region Service. Make sure to use region = 'global' if deploying a multi-region cloud run."
+  default     = "global"
+}
+
+variable "service_name" {
+  type        = string
+  description = "Cloud Run service name."
+}
+
+variable "image" {
+  type        = string
+  description = "Name of the image used by cloud run."
+  default     = "us-docker.pkg.dev/cloudrun/container/hello:latest"
 }
 
 variable "cloud_run_deletion_protection" {
@@ -31,25 +48,28 @@ variable "cloud_run_deletion_protection" {
   default     = true
 }
 
-variable "vpc_mode" {
+variable "cloud_run_vpc_egress_mode" {
   type        = string
-  description = "VPC Mode: direct-vpc-egress (default) or vpc-access-connector."
-  default     = "direct-vpc-egress"
+  description = "Defines how Cloud Run connects to the VPC for outbound traffic. Modes can be default, direct-vpc-egress or vpc-access-connector."
+  default     = "default"
 
   validation {
-    condition     = contains(["direct-vpc-egress", "vpc-access-connector"], var.vpc_mode)
-    error_message = "vpc_mode must be 'direct-vpc-egress' or 'vpc-access-connector'."
+    condition = contains(
+      ["default", "direct-vpc-egress", "vpc-access-connector"],
+      var.cloud_run_vpc_egress_mode
+    )
+    error_message = "cloud_run_vpc_egress_mode must be 'default', 'direct-vpc-egress' or 'vpc-access-connector'."
   }
 }
 
 variable "vpc_connectors" {
-  description = "Configuration for Serverless VPC Access connectors by regions."
   type = map(object({
     name        = string
     region      = string
     subnet_name = string
   }))
-  default = {}
+  description = "Configuration for Serverless VPC Access connectors by region."
+  default     = {}
 }
 
 variable "vpc_network" {
@@ -64,11 +84,36 @@ variable "vpc_subnets" {
   default     = {}
 }
 
-variable "vpc_egress" {
+variable "vpc_egress_traffic" {
   type        = string
-  default     = "PRIVATE_RANGES_ONLY"
+  description = "Defines which outbound traffic from Cloud Run is routed through the VPC (private IP ranges only or all traffic) when VPC egress is enabled."
+  default     = "private-ranges-only"
   validation {
-    condition     = var.vpc_egress == null || can(regex("^(PRIVATE_RANGES_ONLY|ALL_TRAFFIC)$", var.vpc_egress))
-    error_message = "vpc_egress must be PRIVATE_RANGES_ONLY, ALL_TRAFFIC or null."
+    condition     = var.vpc_egress_traffic == null || can(regex("^(private-ranges-only|all-traffic)$", var.vpc_egress_traffic))
+    error_message = "vpc_egress_traffic must be private-ranges-only, all-traffic or null."
   }
+}
+
+variable "primary_region" {
+  type        = string
+  description = "Primary region for reference."
+  default     = "us-west1"
+}
+
+variable "lb_ip_address" {
+  type        = string
+  description = "Optional: Use an existing Global IP for Load Balancer. Leave empty to create a new one."
+  default     = null
+}
+
+variable "lb_domain" {
+  type        = string
+  description = "Optional: Use an existing domain. Leave empty to use <IP>.sslip.io."
+  default     = null
+}
+
+variable "enable_load_balancer" {
+  type        = bool
+  description = "If true, creates the Global Load Balancer resources. Defaults to false."
+  default     = false
 }

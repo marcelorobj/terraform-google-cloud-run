@@ -64,6 +64,8 @@ spec:
         location: examples/simple_job_exec
       - name: v2
         location: examples/v2
+      - name: v2_multi_regions
+        location: examples/v2_multi_regions
       - name: v2_with_gmp
         location: examples/v2_with_gmp
       - name: v2_with_gpu
@@ -119,6 +121,17 @@ spec:
         description: A set of key/value label pairs to assign to the container metadata
         varType: map(string)
         defaultValue: {}
+      - name: ingress
+        description: Restricts network access to your Cloud Run service
+        varType: string
+        defaultValue: INGRESS_TRAFFIC_ALL
+      - name: vpc_connector
+        description: The full resource name of the VPC Access connector to use. Leave null to use Direct VPC Egress.
+        varType: string
+      - name: vpc_egress
+        description: The outbound traffic setting for VPC. Use 'PRIVATE_RANGES_ONLY' with a connector. Use 'ALL_TRAFFIC' for Direct VPC Egress. Set to null to disable all VPC egress.
+        varType: string
+        defaultValue: ALL_TRAFFIC
       - name: template_annotations
         description: Annotations to the container metadata including VPC Connector and SQL. See [more details](https://cloud.google.com/run/docs/reference/rpc/google.cloud.run.v1#revisiontemplate)
         varType: map(string)
@@ -323,13 +336,13 @@ spec:
     roles:
       - level: Project
         roles:
-          - roles/cloudkms.admin
-          - roles/resourcemanager.projectIamAdmin
-          - roles/run.admin
           - roles/iam.serviceAccountAdmin
           - roles/artifactregistry.admin
           - roles/iam.serviceAccountUser
           - roles/serviceusage.serviceUsageViewer
+          - roles/cloudkms.admin
+          - roles/resourcemanager.projectIamAdmin
+          - roles/run.admin
     services:
       - accesscontextmanager.googleapis.com
       - cloudbilling.googleapis.com

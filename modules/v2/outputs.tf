@@ -87,3 +87,45 @@ output "apphub_service_uri" {
   }
   description = "Service URI in CAIS style to be used by Apphub."
 }
+
+output "https_proxy_id" {
+  value = try(google_compute_target_https_proxy.cloudrun_https_proxy[0].id, null)
+}
+
+output "url_map_id" {
+  value = try(google_compute_url_map.cloudrun_urlmap[0].id, null)
+}
+
+output "ssl_certificate_domains" {
+  value = try(google_compute_managed_ssl_certificate.cloudrun_cert[0].managed[0].domains, [])
+}
+
+output "ssl_certificate_id" {
+  value = try(google_compute_managed_ssl_certificate.cloudrun_cert[0].id, null)
+}
+
+output "serverless_negs" {
+  value = {
+    for k, v in google_compute_region_network_endpoint_group.cloudrun_neg : k => v.self_link
+  }
+}
+
+output "backend_service_global_id" {
+  value = try(google_compute_backend_service.cloudrun_backend_global[0].id, null)
+}
+
+output "lb_ip" {
+  value = local.lb_ip_address
+}
+
+output "lb_domain" {
+  value = local.lb_domain
+}
+
+output "lb_https_url" {
+  value = local.lb_domain != null ? "https://${local.lb_domain}" : null
+}
+
+output "global_forwarding_rule_id" {
+  value = try(google_compute_global_forwarding_rule.cloudrun_https_rule[0].id, null)
+}

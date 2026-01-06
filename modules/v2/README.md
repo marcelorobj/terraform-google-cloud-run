@@ -57,6 +57,7 @@ Functional examples are included in the
 | create\_service\_account | Create a new service account for cloud run service | `bool` | `true` | no |
 | custom\_audiences | One or more custom audiences that you want this service to support. Specify each custom audience as the full URL in a string. [Refer](https://cloud.google.com/run/docs/configuring/custom-audiences) | `list(string)` | `null` | no |
 | description | Cloud Run service description. This field currently has a 512-character limit. | `string` | `null` | no |
+| enable\_load\_balancer | If true, creates the Global Load Balancer resources. Defaults to false. | `bool` | `false` | no |
 | enable\_prometheus\_sidecar | Enable Prometheus sidecar in Cloud Run instance. | `bool` | `false` | no |
 | encryption\_key | A reference to a customer managed encryption key (CMEK) to use to encrypt this container image. This is optional. | `string` | `null` | no |
 | execution\_environment | The sandbox environment to host this Revision. | `string` | `"EXECUTION_ENVIRONMENT_GEN2"` | no |
@@ -64,9 +65,13 @@ Functional examples are included in the
 | iap\_members | Valid only when launch stage is set to 'BETA'. IAP is enabled automatically when users or service accounts (SAs) are provided. Use allUsers for public access, allAuthenticatedUsers for any Google-authenticated user, or specify individual users/SAs. [More info](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iap_web_cloud_run_service_iam#member/members-2) | `list(string)` | `[]` | no |
 | ingress | Restricts network access to your Cloud Run service | `string` | `"INGRESS_TRAFFIC_ALL"` | no |
 | launch\_stage | The launch stage as defined by Google Cloud Platform Launch Stages. Cloud Run supports ALPHA, BETA, and GA. If no value is specified, GA is assumed. | `string` | `"GA"` | no |
+| lb\_domain | Optional: Use an existing domain. Leave empty to use <IP>.sslip.io. (Only used if enable\_load\_balancer is true) | `string` | `null` | no |
+| lb\_ip\_address | Optional: Use an existing Global IP for Load Balancer. Leave empty to create a new one. (Only used if enable\_load\_balancer is true) | `string` | `null` | no |
+| load\_balancer\_config | Configuration for the Load Balancer. If null, no LB resources are created. | <pre>object({<br>    regions           = list(string)<br>    global_ip_address = optional(string, null)<br>    domain            = optional(string, null)<br>    name_prefix       = optional(string, "cloudrun")<br>  })</pre> | `null` | no |
 | location | Cloud Run service deployment location | `string` | n/a | yes |
 | max\_instance\_request\_concurrency | Sets the maximum number of requests that each serving instance can receive. This is optional. | `string` | `null` | no |
 | members | Users/SAs to be given invoker access to the service. Grant invoker access by specifying the users or service accounts (SAs). Use allUsers for public access, allAuthenticatedUsers for access by logged-in Google users, or provide a list of specific users/SAs. [See the complete list of available options here](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service_iam#member/members-1) | `list(string)` | `[]` | no |
+| multi\_region\_settings | Settings for creating a Multi-Region Service. | <pre>object({<br>    regions = list(string)<br>  })</pre> | `null` | no |
 | node\_selector | Node Selector describes the hardware requirements of the GPU resource. [More info](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service#nested_template_node_selector). | <pre>object({<br>    accelerator = string<br>  })</pre> | `null` | no |
 | project\_id | The project ID to deploy to | `string` | n/a | yes |
 | revision | The unique name for the revision. If this field is omitted, it will be automatically generated based on the Service name | `string` | `null` | no |
@@ -90,18 +95,28 @@ Functional examples are included in the
 | Name | Description |
 |------|-------------|
 | apphub\_service\_uri | Service URI in CAIS style to be used by Apphub. |
+| backend\_service\_global\_id | n/a |
 | creator | Email address of the authenticated creator. |
 | effective\_annotations | All of annotations (key/value pairs) present on the resource in GCP, including the annotations configured through Terraform, other clients and services. |
+| global\_forwarding\_rule\_id | n/a |
+| https\_proxy\_id | n/a |
 | last\_modifier | Email address of the last authenticated modifier. |
 | latest\_created\_revision | Name of the last created revision. See comments in reconciling for additional information on reconciliation process in Cloud Run. |
 | latest\_ready\_revision | Name of the latest revision that is serving traffic. See comments in reconciling for additional information on reconciliation process in Cloud Run. |
+| lb\_domain | n/a |
+| lb\_https\_url | n/a |
+| lb\_ip | n/a |
 | location | Location in which the Cloud Run service was created |
 | observed\_generation | The generation of this Service currently serving traffic. |
 | project\_id | Google Cloud project in which the service was created |
+| serverless\_negs | n/a |
 | service\_account\_id | Service account id and email |
 | service\_id | Unique Identifier for the created service with format projects/{{project}}/locations/{{location}}/services/{{name}} |
 | service\_name | Name of the created service |
 | service\_uri | The main URI in which this Service is serving traffic. |
+| ssl\_certificate\_domains | n/a |
+| ssl\_certificate\_id | n/a |
 | traffic\_statuses | Detailed status information for corresponding traffic targets. |
+| url\_map\_id | n/a |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
